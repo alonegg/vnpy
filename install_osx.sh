@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
 
 python=$1
-shift 1
+pypi_index=$2
+shift 2
 
-[[ -z $python ]] && python=python
+[[ -z $python ]] && python=python3
+[[ -z $pypi_index ]] && pypi_index=https://pypi.vnpy.com
 
-$python -m pip install --upgrade pip setuptools wheel
+$python -m pip install --upgrade pip wheel --index $pypi_index
 
 # Get and build ta-lib
 function install-ta-lib()
@@ -20,11 +22,8 @@ function ta-lib-exists()
 ta-lib-exists || install-ta-lib
 
 # install ta-lib
-$python -m pip install numpy==1.18.2
-$python -m pip install ta-lib==0.4.17
+$python -m pip install numpy==2.2.3 --index $pypi_index
+$python -m pip install ta-lib==0.6.4 --index $pypi_index
 
-# Install Python Modules
-$python -m pip install -r requirements.txt
-
-# Install vn.py
-$python -m pip install . $@
+# Install VeighNa
+$python -m pip install . --index $pypi_index

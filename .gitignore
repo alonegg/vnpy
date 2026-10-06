@@ -1,6 +1,7 @@
 # Python
 *.pyc
 *.pyo
+*.pyd
 *.egg-info/
 
 # Jupyter
@@ -19,7 +20,7 @@ build
 dist
 *.local
 
-# vn.py
+# VeighNa
 .vntrader
 
 # Visual Studio intermediate files
@@ -35,3 +36,12 @@ _templates
 
 # Misc
 .DS_Store
+*.mo
+
+# Alpha
+lab/
+/.mypy_cache
+
+# Type checker / linter / test caches
+.ruff_cache/
+.pytest_cache/

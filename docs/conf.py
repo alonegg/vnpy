@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 # Configuration file for the Sphinx documentation builder.
 #
 # This file does only contain a selection of the most common options. For a
@@ -19,14 +17,14 @@
 
 # -- Project information -----------------------------------------------------
 
-project = 'vnpy'
-copyright = '2019, vn.py Team'
-author = 'vn.py Team'
+project = 'VeighNa'
+copyright = '2015 - 2024, 上海韦纳软件科技有限公司'
+author = '上海韦纳软件科技有限公司'
 
 # The short X.Y version
-version = '2.0.3'
+version = '2024.7.18'
 # The full version, including alpha/beta/rc tags
-release = '2.0.3'
+release = '2024.7.18'
 
 # -- General configuration ---------------------------------------------------
 
@@ -95,7 +93,7 @@ html_theme_options = {
     'github_repo': 'vnpy',
     'github_type': 'star',
     'description': (r"<div class='col-md-12'>"
-                    r"<strong>VN.PY</strong>"
+                    r"<strong>VeighNa</strong>"
                     r"</div>"
                     r"<br/>"
                     r"By Traders, For Traders"),
@@ -163,7 +161,7 @@ latex_elements = {
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
     (master_doc, 'vnpy.tex', 'vnpy Documentation',
-     'vn.py Team', 'manual'),
+     'VeighNa Team', 'manual'),
 ]
 
 # -- Options for manual page output ------------------------------------------

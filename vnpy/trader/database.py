@@ -1,16 +1,21 @@
+"""
+Abstract database and loader for bar and tick storage.
+"""
+
 from abc import ABC, abstractmethod
 from datetime import datetime
-from typing import List
-from pytz import timezone
+from types import ModuleType
 from dataclasses import dataclass
 from importlib import import_module
 
 from .constant import Interval, Exchange
 from .object import BarData, TickData
 from .setting import SETTINGS
+from .utility import ZoneInfo
+from .locale import _
 
 
-DB_TZ = timezone(SETTINGS["database.timezone"])
+DB_TZ: ZoneInfo = ZoneInfo(SETTINGS["database.timezone"])
 
 
 def convert_tz(dt: datetime) -> datetime:
@@ -28,11 +33,24 @@ class BarOverview:
     """
 
     symbol: str = ""
-    exchange: Exchange = None
-    interval: Interval = None
+    exchange: Exchange | None = None
+    interval: Interval | None = None
     count: int = 0
-    start: datetime = None
-    end: datetime = None
+    start: datetime | None = None
+    end: datetime | None = None
+
+
+@dataclass
+class TickOverview:
+    """
+    Overview of tick data stored in database.
+    """
+
+    symbol: str = ""
+    exchange: Exchange | None = None
+    count: int = 0
+    start: datetime | None = None
+    end: datetime | None = None
 
 
 class BaseDatabase(ABC):
@@ -41,14 +59,14 @@ class BaseDatabase(ABC):
     """
 
     @abstractmethod
-    def save_bar_data(self, bars: List[BarData]) -> bool:
+    def save_bar_data(self, bars: list[BarData], stream: bool = False) -> bool:
         """
         Save bar data into database.
         """
         pass
 
     @abstractmethod
-    def save_tick_data(self, ticks: List[TickData]) -> bool:
+    def save_tick_data(self, ticks: list[TickData], stream: bool = False) -> bool:
         """
         Save tick data into database.
         """
@@ -62,7 +80,7 @@ class BaseDatabase(ABC):
         interval: Interval,
         start: datetime,
         end: datetime
-    ) -> List[BarData]:
+    ) -> list[BarData]:
         """
         Load bar data from database.
         """
@@ -75,7 +93,7 @@ class BaseDatabase(ABC):
         exchange: Exchange,
         start: datetime,
         end: datetime
-    ) -> List[TickData]:
+    ) -> list[TickData]:
         """
         Load tick data from database.
         """
@@ -105,18 +123,27 @@ class BaseDatabase(ABC):
         pass
 
     @abstractmethod
-    def get_bar_overview(self) -> List[BarOverview]:
+    def get_bar_overview(self) -> list[BarOverview]:
         """
-        Return data avaible in database.
+        Return bar data avaible in database.
+        """
+        pass
+
+    @abstractmethod
+    def get_tick_overview(self) -> list[TickOverview]:
+        """
+        Return tick data avaible in database.
         """
         pass
 
 
-database: BaseDatabase = None
+database: BaseDatabase | None = None
 
 
 def get_database() -> BaseDatabase:
-    """"""
+    """
+    Return the configured database, or SQLite when its driver is missing.
+    """
     # Return database object if already inited
     global database
     if database:
@@ -128,9 +155,9 @@ def get_database() -> BaseDatabase:
 
     # Try to import database module
     try:
-        module = import_module(module_name)
+        module: ModuleType = import_module(module_name)
     except ModuleNotFoundError:
-        print(f"找不到数据库驱动{module_name}，使用默认的SQLite数据库")
+        print(_("找不到数据库驱动{}，使用默认的SQLite数据库").format(module_name))
         module = import_module("vnpy_sqlite")
 
     # Create database object from module

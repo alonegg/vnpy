@@ -1,7 +1,9 @@
-from __future__ import print_function
-from __future__ import absolute_import
-from time import sleep
+"""
+Example RPC client that calls a remote add and prints published messages.
+"""
 
+from time import sleep
+from typing import Any
 from vnpy.rpc import RpcClient
 
 
@@ -10,13 +12,13 @@ class TestClient(RpcClient):
     Test RpcClient
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """
         Constructor
         """
-        super(TestClient, self).__init__()
+        super().__init__()
 
-    def callback(self, topic, data):
+    def callback(self, topic: str, data: Any) -> None:
         """
         Realize callable function
         """
@@ -29,12 +31,7 @@ if __name__ == "__main__":
 
     tc = TestClient()
     tc.subscribe_topic("")
-    tc.start(
-        req_address,
-        sub_address,
-        "./certificates/client.key_secret",
-        "./certificates/server.key"
-    )
+    tc.start(req_address, sub_address)
 
     while 1:
         print(tc.add(1, 3))

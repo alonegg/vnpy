@@ -1,15 +1,19 @@
+"""
+Keep a CTA strategy process alive during futures trading hours.
+"""
+
 import multiprocessing
 import sys
 from time import sleep
 from datetime import datetime, time
-from logging import INFO
 
 from vnpy.event import EventEngine
 from vnpy.trader.setting import SETTINGS
-from vnpy.trader.engine import MainEngine
+from vnpy.trader.engine import MainEngine, LogEngine
+from vnpy.trader.logger import INFO, logger
 
 from vnpy_ctp import CtpGateway
-from vnpy_ctastrategy import CtaStrategyApp
+from vnpy_ctastrategy import CtaStrategyApp, CtaEngine
 from vnpy_ctastrategy.base import EVENT_CTA_LOG
 
 
@@ -38,8 +42,10 @@ NIGHT_START = time(20, 45)
 NIGHT_END = time(2, 45)
 
 
-def check_trading_period():
-    """"""
+def check_trading_period() -> bool:
+    """
+    Return whether the clock is inside the day session or the overnight night session.
+    """
     current_time = datetime.now().time()
 
     trading = False
@@ -53,48 +59,48 @@ def check_trading_period():
     return trading
 
 
-def run_child():
+def run_child() -> None:
     """
     Running in the child process.
     """
     SETTINGS["log.file"] = True
 
-    event_engine = EventEngine()
-    main_engine = MainEngine(event_engine)
+    event_engine: EventEngine = EventEngine()
+    main_engine: MainEngine = MainEngine(event_engine)
     main_engine.add_gateway(CtpGateway)
-    cta_engine = main_engine.add_app(CtaStrategyApp)
-    main_engine.write_log("主引擎创建成功")
+    cta_engine: CtaEngine = main_engine.add_app(CtaStrategyApp)
+    logger.info("主引擎创建成功")
 
-    log_engine = main_engine.get_engine("log")
+    log_engine: LogEngine = main_engine.get_engine("log")       # type: ignore
     event_engine.register(EVENT_CTA_LOG, log_engine.process_log_event)
-    main_engine.write_log("注册日志事件监听")
+    logger.info("注册日志事件监听")
 
     main_engine.connect(ctp_setting, "CTP")
-    main_engine.write_log("连接CTP接口")
+    logger.info("连接CTP接口")
 
     sleep(10)
 
     cta_engine.init_engine()
-    main_engine.write_log("CTA策略初始化完成")
+    logger.info("CTA策略初始化完成")
 
     cta_engine.init_all_strategies()
     sleep(60)   # Leave enough time to complete strategy initialization
-    main_engine.write_log("CTA策略全部初始化")
+    logger.info("CTA策略全部初始化")
 
     cta_engine.start_all_strategies()
-    main_engine.write_log("CTA策略全部启动")
+    logger.info("CTA策略全部启动")
 
     while True:
         sleep(10)
 
         trading = check_trading_period()
         if not trading:
-            print("关闭子进程")
+            logger.info("关闭子进程")
             main_engine.close()
             sys.exit(0)
 
 
-def run_parent():
+def run_parent() -> None:
     """
     Running in the parent process.
     """

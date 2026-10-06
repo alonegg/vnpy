@@ -1,5 +1,7 @@
-from __future__ import print_function
-from __future__ import absolute_import
+"""
+Example RPC server that adds two numbers and publishes the current time.
+"""
+
 from time import sleep, time
 
 from vnpy.rpc import RpcServer
@@ -14,7 +16,7 @@ class TestServer(RpcServer):
         """
         Constructor
         """
-        super(TestServer, self).__init__()
+        super().__init__()
 
         self.register(self.add)
 
@@ -31,11 +33,7 @@ if __name__ == "__main__":
     pub_address = "tcp://*:4102"
 
     ts = TestServer()
-    ts.start(
-        rep_address,
-        pub_address,
-        "./certificates/server.key_secret"
-    )
+    ts.start(rep_address, pub_address)
 
     while 1:
         content = f"current server time is {time()}"

@@ -1,6 +1,11 @@
-from typing import List, Dict, Type
+"""
+Chart widget and crosshair cursor.
+"""
 
-import pyqtgraph as pg
+from datetime import datetime
+from typing import Any
+
+import pyqtgraph as pg      # type: ignore
 
 from vnpy.trader.ui import QtGui, QtWidgets, QtCore
 from vnpy.trader.object import BarData
@@ -18,21 +23,25 @@ pg.setConfigOptions(antialias=True)
 
 
 class ChartWidget(pg.PlotWidget):
-    """"""
-    MIN_BAR_COUNT = 100
+    """
+    Widget that shows one or more linked chart plots.
+    """
+    MIN_BAR_COUNT: int = 100
 
-    def __init__(self, parent: QtWidgets.QWidget = None):
-        """"""
+    def __init__(self, parent: QtWidgets.QWidget | None = None) -> None:
+        """
+        Create the chart widget and its bar manager.
+        """
         super().__init__(parent)
 
         self._manager: BarManager = BarManager()
 
-        self._plots: Dict[str, pg.PlotItem] = {}
-        self._items: Dict[str, ChartItem] = {}
-        self._item_plot_map: Dict[ChartItem, pg.PlotItem] = {}
+        self._plots: dict[str, pg.PlotItem] = {}
+        self._items: dict[str, ChartItem] = {}
+        self._item_plot_map: dict[ChartItem, pg.PlotItem] = {}
 
-        self._first_plot: pg.PlotItem = None
-        self._cursor: ChartCursor = None
+        self._first_plot: pg.PlotItem | None = None
+        self._cursor: ChartCursor | None = None
 
         self._right_ix: int = 0                     # Index of most right data
         self._bar_count: int = self.MIN_BAR_COUNT   # Total bar visible in chart
@@ -41,20 +50,22 @@ class ChartWidget(pg.PlotWidget):
 
     def _init_ui(self) -> None:
         """"""
-        self.setWindowTitle("ChartWidget of vn.py")
+        self.setWindowTitle("ChartWidget of VeighNa")
 
-        self._layout = pg.GraphicsLayout()
+        self._layout: pg.GraphicsLayout = pg.GraphicsLayout()
         self._layout.setContentsMargins(10, 10, 10, 10)
         self._layout.setSpacing(0)
         self._layout.setBorder(color=GREY_COLOR, width=0.8)
         self._layout.setZValue(0)
         self.setCentralItem(self._layout)
 
-    def _get_new_x_axis(self):
-        return DatetimeAxis(self._manager, orientation='bottom')
+    def _get_new_x_axis(self) -> DatetimeAxis:
+        return DatetimeAxis(self._manager, orientation="bottom")
 
     def add_cursor(self) -> None:
-        """"""
+        """
+        Add a crosshair cursor to the chart.
+        """
         if not self._cursor:
             self._cursor = ChartCursor(
                 self, self._manager, self._plots, self._item_plot_map)
@@ -63,19 +74,19 @@ class ChartWidget(pg.PlotWidget):
         self,
         plot_name: str,
         minimum_height: int = 80,
-        maximum_height: int = None,
+        maximum_height: int | None = None,
         hide_x_axis: bool = False
     ) -> None:
         """
         Add plot area.
         """
         # Create plot object
-        plot = pg.PlotItem(axisItems={'bottom': self._get_new_x_axis()})
+        plot: pg.PlotItem = pg.PlotItem(axisItems={"bottom": self._get_new_x_axis()})
         plot.setMenuEnabled(False)
         plot.setClipToView(True)
-        plot.hideAxis('left')
-        plot.showAxis('right')
-        plot.setDownsampling(mode='peak')
+        plot.hideAxis("left")
+        plot.showAxis("right")
+        plot.setDownsampling(mode="peak")
         plot.setRange(xRange=(0, 1), yRange=(0, 1))
         plot.hideButtons()
         plot.setMinimumHeight(minimum_height)
@@ -90,18 +101,18 @@ class ChartWidget(pg.PlotWidget):
             self._first_plot = plot
 
         # Connect view change signal to update y range function
-        view = plot.getViewBox()
+        view: pg.ViewBox = plot.getViewBox()
         view.sigXRangeChanged.connect(self._update_y_range)
         view.setMouseEnabled(x=True, y=False)
 
         # Set right axis
-        right_axis = plot.getAxis('right')
+        right_axis: pg.AxisItem = plot.getAxis("right")
         right_axis.setWidth(60)
         right_axis.tickFont = NORMAL_FONT
 
         # Connect x-axis link
         if self._plots:
-            first_plot = list(self._plots.values())[0]
+            first_plot: pg.PlotItem = list(self._plots.values())[0]
             plot.setXLink(first_plot)
 
         # Store plot object in dict
@@ -113,17 +124,17 @@ class ChartWidget(pg.PlotWidget):
 
     def add_item(
         self,
-        item_class: Type[ChartItem],
+        item_class: type[ChartItem],
         item_name: str,
         plot_name: str
-    ):
+    ) -> None:
         """
         Add chart item.
         """
-        item = item_class(self._manager)
+        item: ChartItem = item_class(self._manager)
         self._items[item_name] = item
 
-        plot = self._plots.get(plot_name)
+        plot: pg.PlotItem = self._plots.get(plot_name)
         plot.addItem(item)
 
         self._item_plot_map[item] = plot
@@ -134,11 +145,11 @@ class ChartWidget(pg.PlotWidget):
         """
         return self._plots.get(plot_name, None)
 
-    def get_all_plots(self) -> List[pg.PlotItem]:
+    def get_all_plots(self) -> list[pg.PlotItem]:
         """
         Get all plot objects.
         """
-        return self._plots.values()
+        return list(self._plots.values())
 
     def clear_all(self) -> None:
         """
@@ -146,18 +157,20 @@ class ChartWidget(pg.PlotWidget):
         """
         self._manager.clear_all()
 
+        item: ChartItem
         for item in self._items.values():
             item.clear_all()
 
         if self._cursor:
             self._cursor.clear_all()
 
-    def update_history(self, history: List[BarData]) -> None:
+    def update_history(self, history: list[BarData]) -> None:
         """
         Update a list of bar data.
         """
         self._manager.update_history(history)
 
+        item: ChartItem
         for item in self._items.values():
             item.update_history(history)
 
@@ -171,6 +184,7 @@ class ChartWidget(pg.PlotWidget):
         """
         self._manager.update_bar(bar)
 
+        item: ChartItem
         for item in self._items.values():
             item.update_bar(bar)
 
@@ -183,7 +197,11 @@ class ChartWidget(pg.PlotWidget):
         """
         Update the limit of plots.
         """
+        item: ChartItem
+        plot: pg.PlotItem
         for item, plot in self._item_plot_map.items():
+            min_value: float
+            max_value: float
             min_value, max_value = item.get_y_range()
 
             plot.setLimits(
@@ -197,9 +215,10 @@ class ChartWidget(pg.PlotWidget):
         """
         Update the x-axis range of plots.
         """
-        max_ix = self._right_ix
-        min_ix = self._right_ix - self._bar_count
+        max_ix: int = self._right_ix
+        min_ix: int = self._right_ix - self._bar_count
 
+        plot: pg.PlotItem
         for plot in self._plots.values():
             plot.setRange(xRange=(min_ix, max_ix), padding=0)
 
@@ -207,23 +226,31 @@ class ChartWidget(pg.PlotWidget):
         """
         Update the y-axis range of plots.
         """
-        view = self._first_plot.getViewBox()
-        view_range = view.viewRange()
+        if not self._first_plot:
+            return
 
-        min_ix = max(0, int(view_range[0][0]))
-        max_ix = min(self._manager.get_count(), int(view_range[0][1]))
+        view: pg.ViewBox = self._first_plot.getViewBox()
+        view_range: list = view.viewRange()
+
+        min_ix: int = max(0, int(view_range[0][0]))
+        max_ix: int = min(self._manager.get_count(), int(view_range[0][1]))
 
         # Update limit for y-axis
+        item: ChartItem
+        plot: pg.PlotItem
         for item, plot in self._item_plot_map.items():
-            y_range = item.get_y_range(min_ix, max_ix)
+            y_range: tuple = item.get_y_range(min_ix, max_ix)
             plot.setRange(yRange=y_range)
 
     def paintEvent(self, event: QtGui.QPaintEvent) -> None:
         """
         Reimplement this method of parent to update current max_ix value.
         """
-        view = self._first_plot.getViewBox()
-        view_range = view.viewRange()
+        if not self._first_plot:
+            return
+
+        view: pg.ViewBox = self._first_plot.getViewBox()
+        view_range: list = view.viewRange()
         self._right_ix = max(0, view_range[0][1])
 
         super().paintEvent(event)
@@ -232,20 +259,22 @@ class ChartWidget(pg.PlotWidget):
         """
         Reimplement this method of parent to move chart horizontally and zoom in/out.
         """
-        if event.key() == QtCore.Qt.Key_Left:
+        Key: type[QtCore.Qt.Key] = QtCore.Qt.Key
+
+        if event.key() == Key.Key_Left:
             self._on_key_left()
-        elif event.key() == QtCore.Qt.Key_Right:
+        elif event.key() == Key.Key_Right:
             self._on_key_right()
-        elif event.key() == QtCore.Qt.Key_Up:
+        elif event.key() == Key.Key_Up:
             self._on_key_up()
-        elif event.key() == QtCore.Qt.Key_Down:
+        elif event.key() == Key.Key_Down:
             self._on_key_down()
 
     def wheelEvent(self, event: QtGui.QWheelEvent) -> None:
         """
         Reimplement this method of parent to zoom in/out.
         """
-        delta = event.angleDelta()
+        delta: QtCore.QPoint = event.angleDelta()
 
         if delta.y() > 0:
             self._on_key_up()
@@ -260,8 +289,10 @@ class ChartWidget(pg.PlotWidget):
         self._right_ix = max(self._right_ix, self._bar_count)
 
         self._update_x_range()
-        self._cursor.move_left()
-        self._cursor.update_info()
+
+        if self._cursor:
+            self._cursor.move_left()
+            self._cursor.update_info()
 
     def _on_key_right(self) -> None:
         """
@@ -271,28 +302,34 @@ class ChartWidget(pg.PlotWidget):
         self._right_ix = min(self._right_ix, self._manager.get_count())
 
         self._update_x_range()
-        self._cursor.move_right()
-        self._cursor.update_info()
+
+        if self._cursor:
+            self._cursor.move_right()
+            self._cursor.update_info()
 
     def _on_key_down(self) -> None:
         """
         Zoom out the chart.
         """
-        self._bar_count *= 1.2
+        self._bar_count = int(self._bar_count * 1.2)
         self._bar_count = min(int(self._bar_count), self._manager.get_count())
 
         self._update_x_range()
-        self._cursor.update_info()
+
+        if self._cursor:
+            self._cursor.update_info()
 
     def _on_key_up(self) -> None:
         """
         Zoom in the chart.
         """
-        self._bar_count /= 1.2
+        self._bar_count = int(self._bar_count / 1.2)
         self._bar_count = max(int(self._bar_count), self.MIN_BAR_COUNT)
 
         self._update_x_range()
-        self._cursor.update_info()
+
+        if self._cursor:
+            self._cursor.update_info()
 
     def move_to_right(self) -> None:
         """
@@ -300,35 +337,41 @@ class ChartWidget(pg.PlotWidget):
         """
         self._right_ix = self._manager.get_count()
         self._update_x_range()
-        self._cursor.update_info()
+
+        if self._cursor:
+            self._cursor.update_info()
 
 
 class ChartCursor(QtCore.QObject):
-    """"""
+    """
+    Crosshair cursor that shows bar information.
+    """
 
     def __init__(
         self,
         widget: ChartWidget,
         manager: BarManager,
-        plots: Dict[str, pg.GraphicsObject],
-        item_plot_map: Dict[ChartItem, pg.GraphicsObject]
-    ):
-        """"""
+        plots: dict[str, pg.GraphicsObject],
+        item_plot_map: dict[ChartItem, pg.GraphicsObject]
+    ) -> None:
+        """
+        Create the cursor and connect it to mouse movement.
+        """
         super().__init__()
 
         self._widget: ChartWidget = widget
         self._manager: BarManager = manager
-        self._plots: Dict[str, pg.GraphicsObject] = plots
-        self._item_plot_map: Dict[ChartItem, pg.GraphicsObject] = item_plot_map
+        self._plots: dict[str, pg.GraphicsObject] = plots
+        self._item_plot_map: dict[ChartItem, pg.GraphicsObject] = item_plot_map
 
         self._x: int = 0
-        self._y: int = 0
+        self._y: float = 0
         self._plot_name: str = ""
 
         self._init_ui()
         self._connect_signal()
 
-    def _init_ui(self):
+    def _init_ui(self) -> None:
         """"""
         self._init_line()
         self._init_label()
@@ -338,17 +381,20 @@ class ChartCursor(QtCore.QObject):
         """
         Create line objects.
         """
-        self._v_lines: Dict[str, pg.InfiniteLine] = {}
-        self._h_lines: Dict[str, pg.InfiniteLine] = {}
-        self._views: Dict[str, pg.ViewBox] = {}
+        self._v_lines: dict[str, pg.InfiniteLine] = {}
+        self._h_lines: dict[str, pg.InfiniteLine] = {}
+        self._views: dict[str, pg.ViewBox] = {}
 
-        pen = pg.mkPen(WHITE_COLOR)
+        pen: QtGui.QPen = pg.mkPen(WHITE_COLOR)
 
+        plot_name: str
+        plot: pg.GraphicsObject
         for plot_name, plot in self._plots.items():
-            v_line = pg.InfiniteLine(angle=90, movable=False, pen=pen)
-            h_line = pg.InfiniteLine(angle=0, movable=False, pen=pen)
-            view = plot.getViewBox()
+            v_line: pg.InfiniteLine = pg.InfiniteLine(angle=90, movable=False, pen=pen)
+            h_line: pg.InfiniteLine = pg.InfiniteLine(angle=0, movable=False, pen=pen)
+            view: pg.ViewBox = plot.getViewBox()
 
+            line: pg.InfiniteLine
             for line in [v_line, h_line]:
                 line.setZValue(0)
                 line.hide()
@@ -362,9 +408,11 @@ class ChartCursor(QtCore.QObject):
         """
         Create label objects on axis.
         """
-        self._y_labels: Dict[str, pg.TextItem] = {}
+        self._y_labels: dict[str, pg.TextItem] = {}
+        plot_name: str
+        plot: pg.GraphicsObject
         for plot_name, plot in self._plots.items():
-            label = pg.TextItem(
+            label: pg.TextItem = pg.TextItem(
                 plot_name, fill=CURSOR_COLOR, color=BLACK_COLOR)
             label.hide()
             label.setZValue(2)
@@ -382,9 +430,11 @@ class ChartCursor(QtCore.QObject):
     def _init_info(self) -> None:
         """
         """
-        self._infos: Dict[str, pg.TextItem] = {}
+        self._infos: dict[str, pg.TextItem] = {}
+        plot_name: str
+        plot: pg.GraphicsObject
         for plot_name, plot in self._plots.items():
-            info = pg.TextItem(
+            info: pg.TextItem = pg.TextItem(
                 "info",
                 color=CURSOR_COLOR,
                 border=CURSOR_COLOR,
@@ -410,13 +460,16 @@ class ChartCursor(QtCore.QObject):
             return
 
         # First get current mouse point
-        pos = evt
+        pos: tuple = evt
 
+        plot_name: str
+        view: pg.ViewBox
         for plot_name, view in self._views.items():
-            rect = view.sceneBoundingRect()
+            # pyqtgraph 视图矩形无存根，且 contains 的实参是 tuple
+            rect: Any = view.sceneBoundingRect()
 
             if rect.contains(pos):
-                mouse_point = view.mapSceneToView(pos)
+                mouse_point: QtCore.QPointF = view.mapSceneToView(pos)
                 self._x = to_int(mouse_point.x())
                 self._y = mouse_point.y()
                 self._plot_name = plot_name
@@ -429,10 +482,13 @@ class ChartCursor(QtCore.QObject):
 
     def _update_line(self) -> None:
         """"""
+        v_line: pg.InfiniteLine
         for v_line in self._v_lines.values():
             v_line.setPos(self._x)
             v_line.show()
 
+        plot_name: str
+        h_line: pg.InfiniteLine
         for plot_name, h_line in self._h_lines.items():
             if plot_name == self._plot_name:
                 h_line.setPos(self._y)
@@ -442,16 +498,18 @@ class ChartCursor(QtCore.QObject):
 
     def _update_label(self) -> None:
         """"""
-        bottom_plot = list(self._plots.values())[-1]
-        axis_width = bottom_plot.getAxis("right").width()
-        axis_height = bottom_plot.getAxis("bottom").height()
-        axis_offset = QtCore.QPointF(axis_width, axis_height)
+        bottom_plot: pg.PlotItem = list(self._plots.values())[-1]
+        axis_width: float = bottom_plot.getAxis("right").width()
+        axis_height: float = bottom_plot.getAxis("bottom").height()
+        axis_offset: QtCore.QPointF = QtCore.QPointF(axis_width, axis_height)
 
-        bottom_view = list(self._views.values())[-1]
-        bottom_right = bottom_view.mapSceneToView(
+        bottom_view: pg.ViewBox = list(self._views.values())[-1]
+        bottom_right: QtCore.QPointF = bottom_view.mapSceneToView(
             bottom_view.sceneBoundingRect().bottomRight() - axis_offset
         )
 
+        plot_name: str
+        label: pg.TextItem
         for plot_name, label in self._y_labels.items():
             if plot_name == self._plot_name:
                 label.setText(str(self._y))
@@ -460,7 +518,7 @@ class ChartCursor(QtCore.QObject):
             else:
                 label.hide()
 
-        dt = self._manager.get_datetime(self._x)
+        dt: datetime | None = self._manager.get_datetime(self._x)
         if dt:
             self._x_label.setText(dt.strftime("%Y-%m-%d %H:%M:%S"))
             self._x_label.show()
@@ -468,11 +526,15 @@ class ChartCursor(QtCore.QObject):
             self._x_label.setAnchor((0, 0))
 
     def update_info(self) -> None:
-        """"""
-        buf = {}
+        """
+        Refresh the information text shown by the cursor.
+        """
+        buf: dict = {}
 
+        item: ChartItem
+        plot: pg.GraphicsObject
         for item, plot in self._item_plot_map.items():
-            item_info_text = item.get_info_text(self._x)
+            item_info_text: str = item.get_info_text(self._x)
 
             if plot not in buf:
                 buf[plot] = item_info_text
@@ -480,14 +542,15 @@ class ChartCursor(QtCore.QObject):
                 if item_info_text:
                     buf[plot] += ("\n\n" + item_info_text)
 
+        plot_name: str
         for plot_name, plot in self._plots.items():
-            plot_info_text = buf[plot]
-            info = self._infos[plot_name]
+            plot_info_text: str = buf[plot]
+            info: pg.TextItem = self._infos[plot_name]
             info.setText(plot_info_text)
             info.show()
 
-            view = self._views[plot_name]
-            top_left = view.mapSceneToView(view.sceneBoundingRect().topLeft())
+            view: pg.ViewBox = self._views[plot_name]
+            top_left: QtCore.QPointF = view.mapSceneToView(view.sceneBoundingRect().topLeft())
             info.setPos(top_left)
 
     def move_right(self) -> None:
@@ -514,7 +577,10 @@ class ChartCursor(QtCore.QObject):
         """
         Update cursor after moved by left/right.
         """
-        bar = self._manager.get_bar(self._x)
+        bar: BarData | None = self._manager.get_bar(self._x)
+        if bar is None:
+            return
+
         self._y = bar.close_price
 
         self._update_line()
@@ -528,8 +594,10 @@ class ChartCursor(QtCore.QObject):
         self._y = 0
         self._plot_name = ""
 
+        line: pg.InfiniteLine
         for line in list(self._v_lines.values()) + list(self._h_lines.values()):
             line.hide()
 
+        label: pg.TextItem
         for label in list(self._y_labels.values()) + [self._x_label]:
             label.hide()
